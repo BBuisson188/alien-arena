@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alien Arena</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <section class="hud" aria-label="Game status">
+        <div>
+          <span class="label">Alien Arena</span>
+          <strong id="stageLabel">Choose Alien</strong>
+        </div>
+        <div>
+          <span class="label">Hull</span>
+          <strong id="healthLabel">3</strong>
+        </div>
+        <div>
+          <span class="label">Score</span>
+          <strong id="scoreLabel">0</strong>
+        </div>
+        <button id="restartButton" type="button" title="Restart">Restart</button>
+      </section>
+
+      <canvas id="gameCanvas" width="1280" height="720" aria-label="Alien Arena game canvas"></canvas>
+
+      <section class="controls" aria-label="Game controls">
+        <button id="leftButton" type="button" title="Dodge left">Left</button>
+        <button id="shootButton" type="button" title="Fire laser">Fire</button>
+        <button id="rightButton" type="button" title="Dodge right">Right</button>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

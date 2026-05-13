@@ -1,0 +1,16 @@
+# OS/editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Logs/temp files
+*.log
+tmp/
+temp/
+
+# Local dependency folders, if tooling is added later
+node_modules/
+dist/
+build/

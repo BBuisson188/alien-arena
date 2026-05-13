@@ -1,0 +1,131 @@
+:root {
+  color-scheme: dark;
+  --panel: rgba(18, 13, 49, 0.9);
+  --line: rgba(255, 240, 74, 0.62);
+  --text: #f6f7ff;
+  --muted: #1bfff2;
+  --acid: #31ff6b;
+  --violet: #ff47aa;
+  --coin: #fff04a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background:
+    linear-gradient(45deg, rgba(255, 240, 74, 0.16) 25%, transparent 25% 50%, rgba(255, 71, 170, 0.14) 50% 75%, transparent 75%) 0 0 / 46px 46px,
+    radial-gradient(circle at 22% 16%, rgba(49, 255, 107, 0.28), transparent 26%),
+    radial-gradient(circle at 78% 82%, rgba(27, 255, 242, 0.24), transparent 25%),
+    linear-gradient(135deg, #090814 0%, #21135f 48%, #080612 100%);
+  color: var(--text);
+  font-family: "Arial Black", Impact, "Trebuchet MS", sans-serif;
+}
+
+.game-shell {
+  width: min(100%, 1180px);
+  display: grid;
+  gap: 10px;
+}
+
+.hud,
+.controls {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  box-shadow:
+    0 16px 50px rgba(0, 0, 0, 0.36),
+    inset 0 0 0 3px rgba(255, 71, 170, 0.45);
+}
+
+.hud div {
+  min-width: 74px;
+}
+
+.label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-shadow: 2px 2px 0 #101228;
+  text-transform: uppercase;
+}
+
+strong {
+  display: block;
+  font-size: clamp(0.92rem, 2vw, 1.22rem);
+  line-height: 1.1;
+  color: var(--coin);
+  text-shadow: 2px 2px 0 #101228;
+}
+
+button {
+  min-width: 72px;
+  min-height: 42px;
+  border: 3px solid #101228;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #fff04a 0%, #ff9d2e 48%, #ff47aa 100%);
+  color: #101228;
+  font: 900 0.92rem/1 "Arial Black", Impact, "Trebuchet MS", sans-serif;
+  cursor: pointer;
+  text-transform: uppercase;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.75), 0 7px 0 #101228;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+#gameCanvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 6px solid #101228;
+  border-radius: 4px;
+  background: #10221d;
+  box-shadow:
+    0 26px 80px rgba(0, 0, 0, 0.48),
+    0 0 0 4px #fff04a,
+    0 0 0 9px #ff47aa;
+  image-rendering: auto;
+  touch-action: none;
+}
+
+.controls {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.controls button {
+  width: 100%;
+}
+
+@media (max-width: 620px) {
+  body {
+    padding: 8px;
+  }
+
+  .hud {
+    grid-template-columns: 1fr 0.55fr 0.55fr;
+  }
+
+  #restartButton {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
