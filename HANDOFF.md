@@ -38,7 +38,7 @@ Added publishing/support files:
 - `.nojekyll`
 - `version.json`
 
-Current project version: `0.1.6`
+Current project version: `0.1.7`
 
 Local playtesting:
 
@@ -50,6 +50,7 @@ Mobile controls:
 - `index.html` uses a no-scale mobile viewport to reduce accidental iOS double-tap zoom during play.
 - The controls are overlaid: left/right D-pad in the lower-left corner, fire in the lower-right corner.
 - `app.js` binds control buttons with `pointerdown`/`pointerup` and prevents synthetic click/double-click behavior.
+- D-pad buttons were enlarged and spaced apart for easier thumb control.
 
 Icon publishing status:
 

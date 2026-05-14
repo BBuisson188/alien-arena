@@ -232,15 +232,15 @@ button:active {
 
 .dpad {
   display: grid;
-  grid-template-columns: repeat(2, 78px);
-  gap: 8px;
+  grid-template-columns: repeat(2, 88px);
+  gap: 16px;
   pointer-events: auto;
 }
 
 .control-button {
-  width: 78px;
+  width: 88px;
   min-width: 0;
-  min-height: 74px;
+  min-height: 82px;
   border-width: 4px;
   border-radius: 8px;
   font-size: 0.78rem;
@@ -297,12 +297,13 @@ button:active {
   }
 
   .dpad {
-    grid-template-columns: repeat(2, 70px);
+    grid-template-columns: repeat(2, 78px);
+    gap: 14px;
   }
 
   .control-button {
-    width: 70px;
-    min-height: 68px;
+    width: 78px;
+    min-height: 76px;
     font-size: 0.7rem;
   }
 
