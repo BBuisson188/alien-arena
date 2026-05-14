@@ -38,7 +38,7 @@ Added publishing/support files:
 - `.nojekyll`
 - `version.json`
 
-Current project version: `0.1.7`
+Current project version: `0.1.8`
 
 Local playtesting:
 
@@ -51,6 +51,7 @@ Mobile controls:
 - The controls are overlaid: left/right D-pad in the lower-left corner, fire in the lower-right corner.
 - `app.js` binds control buttons with `pointerdown`/`pointerup` and prevents synthetic click/double-click behavior.
 - D-pad buttons were enlarged and spaced apart for easier thumb control.
+- iPad-width screens keep controls pinned inside the viewport; the wide-screen centering rule now only applies at 1180px and above.
 
 Icon publishing status:
 

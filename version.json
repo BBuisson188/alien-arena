@@ -1,6 +1,6 @@
 {
   "name": "alien-arena",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "updated": "2026-05-14",
-  "notes": "Increase mobile D-pad button size and spacing"
+  "notes": "Keep touch controls inside iPad edges and enlarge buttons"
 }
