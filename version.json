@@ -1,6 +1,6 @@
 {
   "name": "alien-arena",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "updated": "2026-05-13",
-  "notes": "Initial static game publish scaffold"
+  "notes": "Add iOS home screen icon and web app manifest references"
 }

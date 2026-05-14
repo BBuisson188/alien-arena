@@ -19,6 +19,7 @@ Current gameplay flow:
 - [styles.css](</C:/Users/bbuis/Local Docs/Codex/alien-arena/styles.css>)
 - [app.js](</C:/Users/bbuis/Local Docs/Codex/alien-arena/app.js>)
 - [README.md](</C:/Users/bbuis/Local Docs/Codex/alien-arena/README.md>)
+- [site.webmanifest](</C:/Users/bbuis/Local Docs/Codex/alien-arena/site.webmanifest>)
 - [version.json](</C:/Users/bbuis/Local Docs/Codex/alien-arena/version.json>)
 - [assets/board.png](</C:/Users/bbuis/Local Docs/Codex/alien-arena/assets/board.png>)
 - [assets/sprites](</C:/Users/bbuis/Local Docs/Codex/alien-arena/assets/sprites>)
@@ -35,7 +36,14 @@ Added publishing/support files:
 - `.nojekyll`
 - `version.json`
 
-Current project version: `0.1.0`
+Current project version: `0.1.1`
+
+Icon publishing status:
+
+- `index.html` references `assets/icons/apple-touch-icon.png` for iOS home-screen saves.
+- `index.html` references `assets/icons/favicon.ico` for browser tabs.
+- Root `site.webmanifest` references `assets/icons/icon-192.png` and `assets/icons/icon-512.png`.
+- Extra generated icon files were renamed with `delete` in the filename for manual cleanup.
 
 Recommended GitHub Pages setup:
 
