@@ -29,6 +29,7 @@
           <strong id="scoreLabel">0</strong>
         </div>
         <button id="restartButton" type="button" title="Restart">Restart</button>
+        <button id="leaderboardButton" type="button" title="Leaderboard">Scores</button>
       </section>
 
       <canvas id="gameCanvas" width="1280" height="720" aria-label="Alien Arena game canvas"></canvas>
@@ -38,8 +39,33 @@
         <button id="shootButton" type="button" title="Fire laser">Fire</button>
         <button id="rightButton" type="button" title="Dodge right">Right</button>
       </section>
+
+      <section id="leaderboardOverlay" class="leaderboard-overlay" aria-label="Leaderboard" hidden>
+        <div class="leaderboard-panel">
+          <div class="leaderboard-header">
+            <span class="label">Alien Arena</span>
+            <strong id="leaderboardTitle">Leaderboard</strong>
+          </div>
+
+          <form id="scoreForm" class="score-form" hidden>
+            <label for="playerName">Top 10 score! Enter name</label>
+            <div class="score-row">
+              <input id="playerName" name="playerName" maxlength="20" autocomplete="off" />
+              <button id="saveScoreButton" type="submit">Save</button>
+            </div>
+          </form>
+
+          <ol id="leaderboardList" class="leaderboard-list"></ol>
+          <p id="recentScoreText" class="recent-score"></p>
+
+          <div class="leaderboard-actions">
+            <button id="closeLeaderboardButton" type="button">Close</button>
+            <button id="playAgainButton" type="button">Play Again</button>
+          </div>
+        </div>
+      </section>
     </main>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
   </body>
 </html>

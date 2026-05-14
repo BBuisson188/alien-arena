@@ -42,7 +42,7 @@ body {
 .hud,
 .controls {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: 1fr auto auto auto auto;
   gap: 10px;
   align-items: center;
   padding: 10px;
@@ -52,6 +52,105 @@ body {
   box-shadow:
     0 16px 50px rgba(0, 0, 0, 0.36),
     inset 0 0 0 3px rgba(255, 71, 170, 0.45);
+}
+
+.leaderboard-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background:
+    linear-gradient(45deg, rgba(255, 240, 74, 0.18) 25%, transparent 25% 50%, rgba(255, 71, 170, 0.17) 50% 75%, transparent 75%) 0 0 / 42px 42px,
+    rgba(5, 6, 18, 0.86);
+}
+
+.leaderboard-overlay[hidden] {
+  display: none;
+}
+
+.leaderboard-panel {
+  width: min(92vw, 560px);
+  padding: 18px;
+  border: 6px solid #101228;
+  border-radius: 4px;
+  background: rgba(18, 13, 49, 0.96);
+  box-shadow:
+    0 20px 80px rgba(0, 0, 0, 0.55),
+    0 0 0 4px #fff04a,
+    0 0 0 9px #ff47aa,
+    inset 0 0 0 3px rgba(27, 255, 242, 0.32);
+}
+
+.leaderboard-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: end;
+  padding-bottom: 12px;
+  border-bottom: 3px solid rgba(255, 240, 74, 0.5);
+}
+
+.score-form {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+  color: var(--coin);
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 #101228;
+}
+
+.score-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+input {
+  min-width: 0;
+  min-height: 42px;
+  border: 3px solid #101228;
+  border-radius: 4px;
+  padding: 0 12px;
+  background: #f6f7ff;
+  color: #101228;
+  font: 900 1rem/1 "Arial Black", Impact, "Trebuchet MS", sans-serif;
+  text-transform: uppercase;
+  box-shadow: inset 0 3px 0 rgba(0, 0, 0, 0.2);
+}
+
+.leaderboard-list {
+  display: grid;
+  gap: 7px;
+  margin: 16px 0;
+  padding-left: 34px;
+  color: #f6f7ff;
+}
+
+.leaderboard-list li {
+  padding: 6px 8px;
+  border-bottom: 2px solid rgba(27, 255, 242, 0.22);
+  text-shadow: 2px 2px 0 #101228;
+}
+
+.leaderboard-list .score-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.recent-score {
+  min-height: 1.4em;
+  color: var(--muted);
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 #101228;
+}
+
+.leaderboard-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .hud div {
@@ -124,8 +223,14 @@ button:active {
     grid-template-columns: 1fr 0.55fr 0.55fr;
   }
 
-  #restartButton {
+  #restartButton,
+  #leaderboardButton {
     grid-column: 1 / -1;
     width: 100%;
+  }
+
+  .leaderboard-actions,
+  .score-row {
+    grid-template-columns: 1fr;
   }
 }

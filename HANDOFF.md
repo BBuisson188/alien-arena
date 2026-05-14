@@ -16,9 +16,11 @@ Current gameplay flow:
 ## Current Files
 
 - [index.html](</C:/Users/bbuis/Local Docs/Codex/alien-arena/index.html>)
+- [Launch Alien Arena.cmd](</C:/Users/bbuis/Local Docs/Codex/alien-arena/Launch Alien Arena.cmd>)
 - [styles.css](</C:/Users/bbuis/Local Docs/Codex/alien-arena/styles.css>)
 - [app.js](</C:/Users/bbuis/Local Docs/Codex/alien-arena/app.js>)
 - [README.md](</C:/Users/bbuis/Local Docs/Codex/alien-arena/README.md>)
+- [firebase-config.js](</C:/Users/bbuis/Local Docs/Codex/alien-arena/firebase-config.js>)
 - [site.webmanifest](</C:/Users/bbuis/Local Docs/Codex/alien-arena/site.webmanifest>)
 - [version.json](</C:/Users/bbuis/Local Docs/Codex/alien-arena/version.json>)
 - [assets/board.png](</C:/Users/bbuis/Local Docs/Codex/alien-arena/assets/board.png>)
@@ -36,7 +38,12 @@ Added publishing/support files:
 - `.nojekyll`
 - `version.json`
 
-Current project version: `0.1.1`
+Current project version: `0.1.5`
+
+Local playtesting:
+
+- Double-click `Launch Alien Arena.cmd` to start a Python static server on `http://127.0.0.1:4177/` and open the game.
+- The launcher is needed because the game uses JavaScript modules and Firebase imports, which should be served over HTTP instead of opened directly from `index.html`.
 
 Icon publishing status:
 
@@ -44,6 +51,22 @@ Icon publishing status:
 - `index.html` references `assets/icons/favicon.ico` for browser tabs.
 - Root `site.webmanifest` references `assets/icons/icon-192.png` and `assets/icons/icon-512.png`.
 - Extra generated icon files were renamed with `delete` in the filename for manual cleanup.
+
+Leaderboard status:
+
+- Local top 10 scores are stored in browser `localStorage` under `alienArenaLeaderboard`.
+- Global top 10 scores read from Firestore path `leaderboards/alien-arena/scores`.
+- Global score documents write exactly `playerName`, `score`, `gameId`, and `createdAt`.
+- Firebase Authentication is not used.
+- End-of-game scores that qualify for top 10 prompt for a name.
+- Qualifying named scores are saved locally first, then added to a pending Firestore sync queue in `localStorage` under `alienArenaPendingGlobalScores`.
+- Pending global scores retry on leaderboard reads and browser `online` events.
+- Pending sync compares against the current global top 10 and uploads only scores that still qualify. Scores that no longer qualify are removed from the local pending queue.
+- Firestore failures are caught and the game falls back to the local leaderboard.
+- End-of-game scores outside the top 10 show as a recent unnamed score below the leaderboard.
+- The `Scores` button opens the global leaderboard when available, otherwise the local leaderboard.
+- Browser Firestore access is intentionally limited to reading leaderboard scores and creating score documents with `addDoc`.
+- The browser game does not update, delete, or prune Firestore documents. Firestore rules should keep `allow update, delete: if false;`.
 
 Recommended GitHub Pages setup:
 

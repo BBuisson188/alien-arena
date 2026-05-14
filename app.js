@@ -1,3 +1,16 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  getFirestore,
+  limit,
+  orderBy,
+  query,
+  serverTimestamp,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { firebaseConfig, hasFirebaseConfig } from "./firebase-config.js";
+
 const canvas = document.querySelector("#gameCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -8,6 +21,15 @@ const restartButton = document.querySelector("#restartButton");
 const leftButton = document.querySelector("#leftButton");
 const rightButton = document.querySelector("#rightButton");
 const shootButton = document.querySelector("#shootButton");
+const leaderboardButton = document.querySelector("#leaderboardButton");
+const leaderboardOverlay = document.querySelector("#leaderboardOverlay");
+const leaderboardTitle = document.querySelector("#leaderboardTitle");
+const leaderboardList = document.querySelector("#leaderboardList");
+const recentScoreText = document.querySelector("#recentScoreText");
+const scoreForm = document.querySelector("#scoreForm");
+const playerNameInput = document.querySelector("#playerName");
+const closeLeaderboardButton = document.querySelector("#closeLeaderboardButton");
+const playAgainButton = document.querySelector("#playAgainButton");
 
 const W = canvas.width;
 const H = canvas.height;
@@ -15,6 +37,29 @@ const MID = W / 2;
 const ENEMY_GOAL = 10;
 const MAX_HEALTH = 3;
 const ARCADE_FONT = '"Arial Black", Impact, "Trebuchet MS", sans-serif';
+const LEADERBOARD_KEY = "alienArenaLeaderboard";
+const PENDING_GLOBAL_SCORES_KEY = "alienArenaPendingGlobalScores";
+const LEADERBOARD_LIMIT = 10;
+const GAME_ID = "alien-arena";
+const FIRESTORE_LEADERBOARD_PATH = ["leaderboards", GAME_ID, "scores"];
+
+const firebaseState = {
+  enabled: false,
+  db: null,
+  error: "",
+};
+
+try {
+  if (hasFirebaseConfig(firebaseConfig)) {
+    const app = initializeApp(firebaseConfig);
+    firebaseState.db = getFirestore(app);
+    firebaseState.enabled = true;
+  } else {
+    firebaseState.error = "Firebase config missing; using local leaderboard.";
+  }
+} catch (error) {
+  firebaseState.error = `Firebase unavailable; using local leaderboard. ${error.message || error}`;
+}
 
 function asset(path) {
   const img = new Image();
@@ -137,6 +182,10 @@ const state = {
   particles: [],
   flash: 0,
   lastTime: 0,
+  gameOverHandled: false,
+  pendingLeaderboardScore: null,
+  recentLeaderboardScore: null,
+  leaderboardSource: "local",
 };
 
 let pointerStart = null;
@@ -172,7 +221,12 @@ function reset(mode = "alien") {
     particles: [],
     flash: 0,
     lastTime: performance.now(),
+    gameOverHandled: false,
+    pendingLeaderboardScore: null,
+    recentLeaderboardScore: null,
+    leaderboardSource: "local",
   });
+  hideLeaderboard();
   updateHud();
 }
 
@@ -194,6 +248,272 @@ function updateHud() {
   stageLabel.textContent = names[state.mode];
   healthLabel.textContent = `${state.health}/${MAX_HEALTH}`;
   scoreLabel.textContent = state.score;
+}
+
+function getLeaderboard() {
+  try {
+    const raw = localStorage.getItem(LEADERBOARD_KEY);
+    const scores = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(scores)) return [];
+    return scores
+      .filter((entry) => entry && typeof entry.score === "number")
+      .map((entry) => ({
+        name: normalizePlayerName(entry.name),
+        score: sanitizeScore(entry.score),
+        date: entry.date || "",
+      }))
+      .sort(compareScores)
+      .slice(0, LEADERBOARD_LIMIT);
+  } catch {
+    return [];
+  }
+}
+
+function saveLeaderboard(scores) {
+  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(scores.slice(0, LEADERBOARD_LIMIT)));
+}
+
+function scoreQualifies(score) {
+  const scores = getLeaderboard();
+  return scoreQualifiesForList(score, scores);
+}
+
+function submitScore(name, score) {
+  const scores = getLeaderboard();
+  scores.push({
+    name: normalizePlayerName(name),
+    score: sanitizeScore(score),
+    date: new Date().toISOString(),
+  });
+  scores.sort(compareScores);
+  saveLeaderboard(scores);
+}
+
+function normalizePlayerName(name) {
+  return (name || "ACE").trim().toUpperCase().slice(0, 20) || "ACE";
+}
+
+function sanitizeScore(score) {
+  return Math.max(0, Math.min(1000000, Math.round(Number(score) || 0)));
+}
+
+function compareScores(a, b) {
+  if (b.score !== a.score) return b.score - a.score;
+  return String(a.date || "").localeCompare(String(b.date || ""));
+}
+
+function getPendingGlobalScores() {
+  try {
+    const raw = localStorage.getItem(PENDING_GLOBAL_SCORES_KEY);
+    const scores = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(scores)) return [];
+    return scores
+      .filter((entry) => entry && typeof entry.score === "number")
+      .map((entry) => ({
+        id: String(entry.id || `${entry.date || Date.now()}-${entry.score}`),
+        name: normalizePlayerName(entry.name),
+        score: sanitizeScore(entry.score),
+        date: entry.date || new Date().toISOString(),
+      }))
+      .sort(compareScores)
+      .slice(0, LEADERBOARD_LIMIT);
+  } catch {
+    return [];
+  }
+}
+
+function savePendingGlobalScores(scores) {
+  localStorage.setItem(PENDING_GLOBAL_SCORES_KEY, JSON.stringify(scores.sort(compareScores).slice(0, LEADERBOARD_LIMIT)));
+}
+
+function queuePendingGlobalScore(name, score) {
+  const pending = getPendingGlobalScores();
+  const entry = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    name: normalizePlayerName(name),
+    score: sanitizeScore(score),
+    date: new Date().toISOString(),
+  };
+  pending.push(entry);
+  savePendingGlobalScores(pending);
+  return entry;
+}
+
+function firestoreScoresCollection() {
+  if (!firebaseState.enabled || !firebaseState.db) return null;
+  return collection(firebaseState.db, ...FIRESTORE_LEADERBOARD_PATH);
+}
+
+async function getGlobalLeaderboard() {
+  const scoresRef = firestoreScoresCollection();
+  if (!scoresRef) throw new Error(firebaseState.error || "Firebase is not configured.");
+
+  const readSnapshot = async (withTieBreaker) => {
+    const q = withTieBreaker
+      ? query(scoresRef, orderBy("score", "desc"), orderBy("createdAt", "asc"), limit(LEADERBOARD_LIMIT))
+      : query(scoresRef, orderBy("score", "desc"), limit(LEADERBOARD_LIMIT));
+    return getDocs(q);
+  };
+
+  let snapshot;
+  try {
+    snapshot = await readSnapshot(true);
+  } catch (error) {
+    console.warn("Global leaderboard tie-break query failed, retrying score-only query.", error);
+    snapshot = await readSnapshot(false);
+  }
+
+  return snapshot.docs
+    .map((doc) => {
+      const data = doc.data();
+      return {
+        name: normalizePlayerName(data.playerName),
+        score: sanitizeScore(data.score),
+        date: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : "",
+      };
+    })
+    .filter((entry) => entry.score >= 0)
+    .sort(compareScores)
+    .slice(0, LEADERBOARD_LIMIT);
+}
+
+let syncingPendingScores = false;
+
+async function syncPendingGlobalScores() {
+  const pending = getPendingGlobalScores();
+  if (!pending.length || syncingPendingScores) return { synced: 0, skipped: 0 };
+  const scoresRef = firestoreScoresCollection();
+  if (!scoresRef) throw new Error(firebaseState.error || "Firebase is not configured.");
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    throw new Error("Offline; pending scores will sync later.");
+  }
+
+  syncingPendingScores = true;
+  try {
+    let globalScores = await getGlobalLeaderboard();
+    const remaining = [];
+    let synced = 0;
+    let skipped = 0;
+
+    for (const entry of pending.sort(compareScores)) {
+      if (!scoreQualifiesForList(entry.score, globalScores)) {
+        skipped += 1;
+        continue;
+      }
+
+      try {
+        await addDoc(scoresRef, {
+          playerName: entry.name,
+          score: entry.score,
+          gameId: GAME_ID,
+          createdAt: serverTimestamp(),
+        });
+        synced += 1;
+        globalScores = [...globalScores, entry].sort(compareScores).slice(0, LEADERBOARD_LIMIT);
+      } catch (error) {
+        remaining.push(entry);
+        console.warn("Pending global score sync failed; keeping it queued.", error);
+      }
+    }
+
+    savePendingGlobalScores(remaining);
+    if (synced || skipped) firebaseState.error = "";
+    return { synced, skipped };
+  } finally {
+    syncingPendingScores = false;
+  }
+}
+
+async function getBestLeaderboard() {
+  try {
+    await syncPendingGlobalScores();
+    const scores = await getGlobalLeaderboard();
+    firebaseState.error = "";
+    return { source: "global", scores };
+  } catch (error) {
+    firebaseState.error = error.message || "Global leaderboard unavailable.";
+    console.warn("Global leaderboard unavailable; using local leaderboard.", error);
+    return { source: "local", scores: getLeaderboard() };
+  }
+}
+
+function scoreQualifiesForList(score, scores) {
+  return scores.length < LEADERBOARD_LIMIT || score > scores[scores.length - 1].score;
+}
+
+function renderLeaderboardList(scores = getLeaderboard()) {
+  leaderboardList.innerHTML = "";
+  if (scores.length === 0) {
+    const empty = document.createElement("li");
+    empty.textContent = "No scores yet";
+    leaderboardList.appendChild(empty);
+    return;
+  }
+  scores.forEach((entry) => {
+    const item = document.createElement("li");
+    const line = document.createElement("div");
+    line.className = "score-line";
+    const name = document.createElement("span");
+    name.textContent = entry.name;
+    const score = document.createElement("span");
+    score.textContent = entry.score.toString();
+    line.append(name, score);
+    item.appendChild(line);
+    leaderboardList.appendChild(item);
+  });
+}
+
+async function showLeaderboard({ score = null, allowNameEntry = false, fromMenu = false, forceLocal = false } = {}) {
+  state.pendingLeaderboardScore = allowNameEntry ? score : null;
+  state.recentLeaderboardScore = allowNameEntry ? null : score;
+  leaderboardTitle.textContent = allowNameEntry ? "New High Score" : "Leaderboard";
+  scoreForm.hidden = !allowNameEntry;
+  recentScoreText.textContent = "Loading leaderboard...";
+  leaderboardOverlay.hidden = false;
+
+  const result = forceLocal ? { source: "local", scores: getLeaderboard() } : await getBestLeaderboard();
+  state.leaderboardSource = result.source;
+  leaderboardTitle.textContent = allowNameEntry
+    ? "New High Score"
+    : result.source === "global"
+      ? "Global Leaderboard"
+      : "Local Leaderboard";
+
+  recentScoreText.textContent = result.source === "global" ? "Global top 10" : "Local top 10 on this device";
+  if (score !== null && !allowNameEntry) {
+    recentScoreText.textContent = `New score: ${score} - not top 10 (${result.source})`;
+  }
+  if (fromMenu) {
+    recentScoreText.textContent = result.source === "global" ? "Global top 10" : "Local top 10 on this device";
+  }
+  if (firebaseState.error && result.source === "local") {
+    recentScoreText.textContent += ` - ${firebaseState.error}`;
+  }
+  renderLeaderboardList(result.scores);
+  if (allowNameEntry) {
+    playerNameInput.value = "";
+    playerNameInput.focus();
+  }
+}
+
+function hideLeaderboard() {
+  if (!leaderboardOverlay) return;
+  leaderboardOverlay.hidden = true;
+  scoreForm.hidden = true;
+  state.pendingLeaderboardScore = null;
+}
+
+async function handleGameEnd() {
+  if (state.gameOverHandled) return;
+  state.gameOverHandled = true;
+  const finalScore = state.score;
+  const result = await getBestLeaderboard();
+  const qualifies = scoreQualifies(finalScore) || scoreQualifiesForList(finalScore, result.scores);
+  if (qualifies) {
+    showLeaderboard({ score: finalScore, allowNameEntry: true });
+  } else {
+    showLeaderboard({ score: finalScore, allowNameEntry: false });
+  }
 }
 
 function drawSprite(sprite, x, y, w, h, flip = false) {
@@ -371,7 +691,12 @@ function startLevel(levelIndex) {
     particles: [],
     flash: 0.5,
     lastTime: performance.now(),
+    gameOverHandled: false,
+    pendingLeaderboardScore: null,
+    recentLeaderboardScore: null,
+    leaderboardSource: "local",
   });
+  hideLeaderboard();
   updateHud();
 }
 
@@ -1412,8 +1737,12 @@ function render(time = performance.now()) {
     if (state.mode === "win") {
       const finalLevel = state.level >= LEVELS.length - 1;
       drawOverlay(levelConfig().clearText, finalLevel ? "Press Restart or Fire to play again" : "Press Fire for next level");
+      if (finalLevel) handleGameEnd();
     }
-    if (state.mode === "lose") drawOverlay("UFO Down", "Press Restart or Fire to try again");
+    if (state.mode === "lose") {
+      drawOverlay("UFO Down", "Press Restart or Fire to try again");
+      handleGameEnd();
+    }
   }
 
   requestAnimationFrame(render);
@@ -1468,6 +1797,7 @@ function movePlayer(direction) {
 }
 
 document.addEventListener("keydown", (event) => {
+  if (event.target instanceof HTMLInputElement) return;
   if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
     if (state.mode === "alien") state.alien = (state.alien + 2) % 3;
     else if (state.mode === "ufo") state.ufo = (state.ufo + 2) % 3;
@@ -1495,6 +1825,42 @@ shootButton.addEventListener("click", () => {
   else fireLaser();
 });
 restartButton.addEventListener("click", () => reset());
+leaderboardButton.addEventListener("click", () => {
+  showLeaderboard({ fromMenu: true });
+});
+closeLeaderboardButton.addEventListener("click", () => {
+  hideLeaderboard();
+});
+playAgainButton.addEventListener("click", () => {
+  reset();
+});
+scoreForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (state.pendingLeaderboardScore === null) return;
+  const name = normalizePlayerName(playerNameInput.value);
+  const score = sanitizeScore(state.pendingLeaderboardScore);
+  submitScore(name, score);
+  queuePendingGlobalScore(name, score);
+  state.pendingLeaderboardScore = null;
+  scoreForm.hidden = true;
+  recentScoreText.textContent = "Saving score...";
+  syncPendingGlobalScores()
+    .then(({ synced }) => {
+      recentScoreText.textContent = synced ? "Score synced!" : "Score saved locally";
+      showLeaderboard({ fromMenu: false });
+    })
+    .catch((error) => {
+      firebaseState.error = `Global sync pending; local score saved. ${error.message || error}`;
+      console.warn("Global score sync failed; local score was queued.", error);
+      showLeaderboard({ fromMenu: false, forceLocal: true });
+    });
+});
+
+window.addEventListener("online", () => {
+  syncPendingGlobalScores().catch((error) => {
+    firebaseState.error = `Global sync pending. ${error.message || error}`;
+  });
+});
 
 function boot() {
   reset();

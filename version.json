@@ -1,6 +1,6 @@
 {
   "name": "alien-arena",
-  "version": "0.1.1",
-  "updated": "2026-05-13",
-  "notes": "Add iOS home screen icon and web app manifest references"
+  "version": "0.1.5",
+  "updated": "2026-05-14",
+  "notes": "Add double-click local launcher for browser testing"
 }
