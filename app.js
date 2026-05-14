@@ -1814,16 +1814,48 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-leftButton.addEventListener("click", () => {
-  movePlayer(-1);
-});
-rightButton.addEventListener("click", () => {
-  movePlayer(1);
-});
-shootButton.addEventListener("click", () => {
+function handleFireControl() {
   if (state.mode === "alien" || state.mode === "ufo" || state.mode === "win" || state.mode === "lose") advanceSelection();
   else fireLaser();
-});
+}
+
+function bindGameButton(button, action, { repeat = false } = {}) {
+  let repeatTimer = null;
+  const clearPress = () => {
+    button.classList.remove("is-pressed");
+    if (repeatTimer) {
+      window.clearInterval(repeatTimer);
+      repeatTimer = null;
+    }
+  };
+
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    button.setPointerCapture?.(event.pointerId);
+    button.classList.add("is-pressed");
+    action();
+    if (repeat) {
+      repeatTimer = window.setInterval(action, 155);
+    }
+  });
+
+  button.addEventListener("pointerup", (event) => {
+    event.preventDefault();
+    clearPress();
+  });
+  button.addEventListener("pointercancel", clearPress);
+  button.addEventListener("lostpointercapture", clearPress);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+  });
+  button.addEventListener("dblclick", (event) => {
+    event.preventDefault();
+  });
+}
+
+bindGameButton(leftButton, () => movePlayer(-1), { repeat: true });
+bindGameButton(rightButton, () => movePlayer(1), { repeat: true });
+bindGameButton(shootButton, handleFireControl);
 restartButton.addEventListener("click", () => reset());
 leaderboardButton.addEventListener("click", () => {
   showLeaderboard({ fromMenu: true });

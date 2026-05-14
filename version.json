@@ -1,6 +1,6 @@
 {
   "name": "alien-arena",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "updated": "2026-05-14",
-  "notes": "Add double-click local launcher for browser testing"
+  "notes": "Improve iOS touch controls and reduce accidental zoom"
 }

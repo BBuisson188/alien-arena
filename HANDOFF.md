@@ -38,12 +38,18 @@ Added publishing/support files:
 - `.nojekyll`
 - `version.json`
 
-Current project version: `0.1.5`
+Current project version: `0.1.6`
 
 Local playtesting:
 
 - Double-click `Launch Alien Arena.cmd` to start a Python static server on `http://127.0.0.1:4177/` and open the game.
 - The launcher is needed because the game uses JavaScript modules and Firebase imports, which should be served over HTTP instead of opened directly from `index.html`.
+
+Mobile controls:
+
+- `index.html` uses a no-scale mobile viewport to reduce accidental iOS double-tap zoom during play.
+- The controls are overlaid: left/right D-pad in the lower-left corner, fire in the lower-right corner.
+- `app.js` binds control buttons with `pointerdown`/`pointerup` and prevents synthetic click/double-click behavior.
 
 Icon publishing status:
 

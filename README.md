@@ -75,3 +75,7 @@ allow update, delete: if false;
 - `assets/`: source board and extracted sprites
 - `site.webmanifest`: install/app icon metadata
 - `HANDOFF.md`: implementation notes and current open items
+
+## Mobile Controls
+
+The game uses overlaid touch controls: a left/right pad in the lower-left corner and a round fire button in the lower-right corner. The page viewport and control handlers are set up to reduce iOS double-tap zoom while playing.

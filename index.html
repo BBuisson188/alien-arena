@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#101228" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Alien Arena" />
@@ -35,9 +35,11 @@
       <canvas id="gameCanvas" width="1280" height="720" aria-label="Alien Arena game canvas"></canvas>
 
       <section class="controls" aria-label="Game controls">
-        <button id="leftButton" type="button" title="Dodge left">Left</button>
-        <button id="shootButton" type="button" title="Fire laser">Fire</button>
-        <button id="rightButton" type="button" title="Dodge right">Right</button>
+        <div class="dpad" aria-label="Movement controls">
+          <button id="leftButton" class="control-button dpad-button" type="button" title="Dodge left" aria-label="Dodge left">Left</button>
+          <button id="rightButton" class="control-button dpad-button" type="button" title="Dodge right" aria-label="Dodge right">Right</button>
+        </div>
+        <button id="shootButton" class="control-button fire-button" type="button" title="Fire laser" aria-label="Fire laser">Fire</button>
       </section>
 
       <section id="leaderboardOverlay" class="leaderboard-overlay" aria-label="Leaderboard" hidden>
