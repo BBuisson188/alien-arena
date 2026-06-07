@@ -1,14 +1,3 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import {
-  addDoc,
-  collection,
-  getDocs,
-  getFirestore,
-  limit,
-  orderBy,
-  query,
-  serverTimestamp,
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig, hasFirebaseConfig } from "./firebase-config.js";
 
 const canvas = document.querySelector("#gameCanvas");
@@ -47,18 +36,46 @@ const firebaseState = {
   enabled: false,
   db: null,
   error: "",
+  loading: null,
+  api: null,
 };
 
-try {
-  if (hasFirebaseConfig(firebaseConfig)) {
-    const app = initializeApp(firebaseConfig);
-    firebaseState.db = getFirestore(app);
-    firebaseState.enabled = true;
-  } else {
+async function initFirebase() {
+  if (firebaseState.enabled && firebaseState.db) return firebaseState;
+  if (firebaseState.loading) return firebaseState.loading;
+  if (!hasFirebaseConfig(firebaseConfig)) {
     firebaseState.error = "Firebase config missing; using local leaderboard.";
+    return firebaseState;
   }
-} catch (error) {
-  firebaseState.error = `Firebase unavailable; using local leaderboard. ${error.message || error}`;
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    firebaseState.error = "Offline; using local leaderboard.";
+    return firebaseState;
+  }
+
+  firebaseState.loading = Promise.all([
+    import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
+    import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"),
+  ])
+    .then(([appModule, firestoreModule]) => {
+      const app = appModule.initializeApp(firebaseConfig);
+      firebaseState.api = firestoreModule;
+      firebaseState.db = firestoreModule.getFirestore(app);
+      firebaseState.enabled = true;
+      firebaseState.error = "";
+      return firebaseState;
+    })
+    .catch((error) => {
+      firebaseState.enabled = false;
+      firebaseState.db = null;
+      firebaseState.api = null;
+      firebaseState.error = `Firebase unavailable; using local leaderboard. ${error.message || error}`;
+      return firebaseState;
+    })
+    .finally(() => {
+      firebaseState.loading = null;
+    });
+
+  return firebaseState.loading;
 }
 
 function asset(path) {
@@ -339,14 +356,16 @@ function queuePendingGlobalScore(name, score) {
   return entry;
 }
 
-function firestoreScoresCollection() {
+async function firestoreScoresCollection() {
+  await initFirebase();
   if (!firebaseState.enabled || !firebaseState.db) return null;
-  return collection(firebaseState.db, ...FIRESTORE_LEADERBOARD_PATH);
+  return firebaseState.api.collection(firebaseState.db, ...FIRESTORE_LEADERBOARD_PATH);
 }
 
 async function getGlobalLeaderboard() {
-  const scoresRef = firestoreScoresCollection();
+  const scoresRef = await firestoreScoresCollection();
   if (!scoresRef) throw new Error(firebaseState.error || "Firebase is not configured.");
+  const { getDocs, limit, orderBy, query } = firebaseState.api;
 
   const readSnapshot = async (withTieBreaker) => {
     const q = withTieBreaker
@@ -382,11 +401,12 @@ let syncingPendingScores = false;
 async function syncPendingGlobalScores() {
   const pending = getPendingGlobalScores();
   if (!pending.length || syncingPendingScores) return { synced: 0, skipped: 0 };
-  const scoresRef = firestoreScoresCollection();
+  const scoresRef = await firestoreScoresCollection();
   if (!scoresRef) throw new Error(firebaseState.error || "Firebase is not configured.");
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     throw new Error("Offline; pending scores will sync later.");
   }
+  const { addDoc, serverTimestamp } = firebaseState.api;
 
   syncingPendingScores = true;
   try {
@@ -1889,10 +1909,20 @@ scoreForm.addEventListener("submit", (event) => {
 });
 
 window.addEventListener("online", () => {
-  syncPendingGlobalScores().catch((error) => {
-    firebaseState.error = `Global sync pending. ${error.message || error}`;
+  initFirebase().then(() => {
+    syncPendingGlobalScores().catch((error) => {
+      firebaseState.error = `Global sync pending. ${error.message || error}`;
+    });
   });
 });
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch((error) => {
+      console.warn("Offline app cache registration failed.", error);
+    });
+  });
+}
 
 function boot() {
   reset();

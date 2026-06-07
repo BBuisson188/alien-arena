@@ -2,6 +2,7 @@
   "name": "Alien Arena",
   "short_name": "AlienArena",
   "description": "A 90s-style arcade UFO shooter through corn, beach, and snow arenas.",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

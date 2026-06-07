@@ -1,6 +1,6 @@
 {
   "name": "alien-arena",
-  "version": "0.1.8",
-  "updated": "2026-05-14",
-  "notes": "Keep touch controls inside iPad edges and enlarge buttons"
+  "version": "0.1.9",
+  "updated": "2026-06-07",
+  "notes": "Add offline PWA cache and make Firebase leaderboard optional at startup"
 }

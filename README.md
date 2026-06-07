@@ -28,6 +28,20 @@ Recommended GitHub Pages setting:
 - Branch: `main`
 - Folder: `/ (root)`
 
+## Offline Web App
+
+Alien Arena is set up as an installable web app. After the game is opened once from the published site while online, `sw.js` caches the game shell, icons, manifest, styles, scripts, and sprites so the saved iPad Home Screen app can launch again without Wi-Fi.
+
+The global Firestore leaderboard is optional at startup. If the device is offline, the game uses the local leaderboard immediately and queues qualifying named scores for the next online session.
+
+For the offline install flow on iPad:
+
+1. Open the published game in Safari while connected to Wi-Fi.
+2. Wait for the first game screen to appear.
+3. Use Share -> Add to Home Screen.
+4. Launch the Home Screen app once while still online so Safari can finish installing the cache.
+5. Airplane mode should then continue to load the game. Global scores will sync later when Wi-Fi returns.
+
 ## App Icons
 
 The active icon files are:
@@ -70,6 +84,7 @@ allow update, delete: if false;
 - `index.html`: page shell
 - `Launch Alien Arena.cmd`: double-click local server/browser launcher
 - `styles.css`: page and arcade cabinet styling
+- `sw.js`: offline app cache for installed/Home Screen play
 - `app.js`: game logic and canvas rendering
 - `firebase-config.js`: Firebase Web SDK app config
 - `assets/`: source board and extracted sprites
