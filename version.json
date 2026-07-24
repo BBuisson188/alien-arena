@@ -1,6 +1,6 @@
 {
   "name": "alien-arena",
-  "version": "0.1.9",
-  "updated": "2026-06-07",
-  "notes": "Add offline PWA cache and make Firebase leaderboard optional at startup"
+  "version": "0.1.10",
+  "updated": "2026-07-24",
+  "notes": "Stabilize game-over leaderboard and top-10 name entry"
 }

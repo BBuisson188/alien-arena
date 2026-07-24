@@ -206,6 +206,7 @@ const state = {
 };
 
 let pointerStart = null;
+let leaderboardRequestId = 0;
 
 function reset(mode = "alien") {
   Object.assign(state, {
@@ -288,11 +289,6 @@ function getLeaderboard() {
 
 function saveLeaderboard(scores) {
   localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(scores.slice(0, LEADERBOARD_LIMIT)));
-}
-
-function scoreQualifies(score) {
-  const scores = getLeaderboard();
-  return scoreQualifiesForList(score, scores);
 }
 
 function submitScore(name, score) {
@@ -483,24 +479,39 @@ function renderLeaderboardList(scores = getLeaderboard()) {
   });
 }
 
-async function showLeaderboard({ score = null, allowNameEntry = false, fromMenu = false, forceLocal = false } = {}) {
-  state.pendingLeaderboardScore = allowNameEntry ? score : null;
-  state.recentLeaderboardScore = allowNameEntry ? null : score;
-  leaderboardTitle.textContent = allowNameEntry ? "New High Score" : "Leaderboard";
-  scoreForm.hidden = !allowNameEntry;
+async function showLeaderboard({
+  score = null,
+  decideNameEntry = false,
+  fromMenu = false,
+  forceLocal = false,
+} = {}) {
+  const requestId = ++leaderboardRequestId;
+  state.pendingLeaderboardScore = null;
+  state.recentLeaderboardScore = score;
+  leaderboardTitle.textContent = "Leaderboard";
+  scoreForm.hidden = true;
   recentScoreText.textContent = "Loading leaderboard...";
+  leaderboardList.innerHTML = "";
   leaderboardOverlay.hidden = false;
 
   const result = forceLocal ? { source: "local", scores: getLeaderboard() } : await getBestLeaderboard();
+  if (requestId !== leaderboardRequestId || leaderboardOverlay.hidden) return;
+
+  const canEnterName = decideNameEntry
+    && score !== null
+    && scoreQualifiesForList(score, result.scores);
+  state.pendingLeaderboardScore = canEnterName ? score : null;
+  state.recentLeaderboardScore = canEnterName ? null : score;
   state.leaderboardSource = result.source;
-  leaderboardTitle.textContent = allowNameEntry
+  leaderboardTitle.textContent = canEnterName
     ? "New High Score"
     : result.source === "global"
       ? "Global Leaderboard"
       : "Local Leaderboard";
+  scoreForm.hidden = !canEnterName;
 
   recentScoreText.textContent = result.source === "global" ? "Global top 10" : "Local top 10 on this device";
-  if (score !== null && !allowNameEntry) {
+  if (score !== null && !canEnterName) {
     recentScoreText.textContent = `New score: ${score} - not top 10 (${result.source})`;
   }
   if (fromMenu) {
@@ -510,7 +521,7 @@ async function showLeaderboard({ score = null, allowNameEntry = false, fromMenu 
     recentScoreText.textContent += ` - ${firebaseState.error}`;
   }
   renderLeaderboardList(result.scores);
-  if (allowNameEntry) {
+  if (canEnterName) {
     playerNameInput.value = "";
     playerNameInput.focus();
   }
@@ -518,6 +529,7 @@ async function showLeaderboard({ score = null, allowNameEntry = false, fromMenu 
 
 function hideLeaderboard() {
   if (!leaderboardOverlay) return;
+  leaderboardRequestId += 1;
   leaderboardOverlay.hidden = true;
   scoreForm.hidden = true;
   state.pendingLeaderboardScore = null;
@@ -527,13 +539,7 @@ async function handleGameEnd() {
   if (state.gameOverHandled) return;
   state.gameOverHandled = true;
   const finalScore = state.score;
-  const result = await getBestLeaderboard();
-  const qualifies = scoreQualifies(finalScore) || scoreQualifiesForList(finalScore, result.scores);
-  if (qualifies) {
-    showLeaderboard({ score: finalScore, allowNameEntry: true });
-  } else {
-    showLeaderboard({ score: finalScore, allowNameEntry: false });
-  }
+  await showLeaderboard({ score: finalScore, decideNameEntry: true });
 }
 
 function drawSprite(sprite, x, y, w, h, flip = false) {
@@ -1791,10 +1797,15 @@ function chooseAt(point) {
 }
 
 canvas.addEventListener("pointerdown", (event) => {
+  if (!leaderboardOverlay.hidden) return;
   pointerStart = canvasPoint(event);
 });
 
 canvas.addEventListener("pointerup", (event) => {
+  if (!leaderboardOverlay.hidden) {
+    pointerStart = null;
+    return;
+  }
   const point = canvasPoint(event);
   if (chooseAt(point)) return;
   if (!pointerStart) return;
@@ -1818,6 +1829,7 @@ function movePlayer(direction) {
 
 document.addEventListener("keydown", (event) => {
   if (event.target instanceof HTMLInputElement) return;
+  if (!leaderboardOverlay.hidden) return;
   if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
     if (state.mode === "alien") state.alien = (state.alien + 2) % 3;
     else if (state.mode === "ufo") state.ufo = (state.ufo + 2) % 3;
@@ -1889,6 +1901,7 @@ playAgainButton.addEventListener("click", () => {
 scoreForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (state.pendingLeaderboardScore === null) return;
+  const requestId = leaderboardRequestId;
   const name = normalizePlayerName(playerNameInput.value);
   const score = sanitizeScore(state.pendingLeaderboardScore);
   submitScore(name, score);
@@ -1898,12 +1911,14 @@ scoreForm.addEventListener("submit", (event) => {
   recentScoreText.textContent = "Saving score...";
   syncPendingGlobalScores()
     .then(({ synced }) => {
+      if (requestId !== leaderboardRequestId || leaderboardOverlay.hidden) return;
       recentScoreText.textContent = synced ? "Score synced!" : "Score saved locally";
       showLeaderboard({ fromMenu: false });
     })
     .catch((error) => {
       firebaseState.error = `Global sync pending; local score saved. ${error.message || error}`;
       console.warn("Global score sync failed; local score was queued.", error);
+      if (requestId !== leaderboardRequestId || leaderboardOverlay.hidden) return;
       showLeaderboard({ fromMenu: false, forceLocal: true });
     });
 });
